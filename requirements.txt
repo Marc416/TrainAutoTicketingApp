@@ -1,5 +1,14 @@
 beautifulsoup4==4.12.2
 lxml==4.9.2
 selenium==4.9.1
+requests==2.31.0
+
+google==3.0.0
+google-api-core==2.11.0
+google-auth==2.16.0
+
+google-api-python-client==2.76.0
+google-auth-httplib2==0.1.0
+google-auth-oauthlib==0.8.0
 
 
