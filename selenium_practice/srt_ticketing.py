@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 
+from email_sender import gmail_sender
 from selenium_practice import my_auth
 
 options = Options()
@@ -96,9 +97,10 @@ def find_condition():
                 driver.refresh()
                 continue
             driver.execute_script(f'document.getElementsByClassName("btn_small btn_burgundy_dark val_m wx90")[{idx}].click()')
-            # 이메일이나 카톡으로 알람을 주면 좋을거 같음
+            # joonheealert로 gmail 보내기
+            gmail_sender.send_email()
+            return
         driver.refresh()
-        # return
 
 
 def _select_station(id, station_number):
