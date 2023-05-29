@@ -78,7 +78,7 @@ def CreateMessage(sender, to, subject, message_text=None, attachment_path=None):
 # -----------------------------------------------------------------------------------------
 def sendmail(to, subject, message_text_html, attachment=None):
   # Your access code
-  cred = google_cred.get_creds()
+  cred = google_cred.get_creds(main_method_for_retry=sendmail())
   access_token = cred.token
   user_id = 'dreamrunner416@gmail.com'
 
