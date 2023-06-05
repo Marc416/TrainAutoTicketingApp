@@ -1,3 +1,4 @@
+from enum import Enum
 from time import sleep
 
 from selenium import webdriver
@@ -10,6 +11,7 @@ from email_sender import gmail_sender
 from selenium_practice import my_auth
 
 options = Options()
+options.add_experimental_option("detach", True)
 options.page_load_strategy = 'normal'
 driver = webdriver.Chrome(executable_path="chromedriver", options=options)  # 크롬드라이버 경로
 
@@ -22,7 +24,7 @@ def main():
 
     input_id_pwd()
     click_login_button()
-    find_condition()
+    catch_ticket()
 
 
 def input_id_pwd():
@@ -42,38 +44,42 @@ def click_login_button():
     driver.implicitly_wait(30)
 
 
-def find_condition():
+def catch_ticket():
     # select 필드의 옵션 value를 선택합니다
     # 1. 출발역 입력
-    _select_station(id="dptRsStnCd", station_number="0551")  # 수서
+    dparting_station(station=STATION.수서)
     # 2. 도착역 입력
-    _select_station(id="arvRsStnCd", station_number="0015")  # 동대구
+    arrival_station(station=STATION.동대구)
     # 3. 출발일 입력
-    element = driver.find_element(by=By.CLASS_NAME, value="calendar1")
-    date = "2023.06.02"
-    driver.execute_script(f"arguments[0].value = '{date}';", element)
-    element.submit()
-    # driver.execute_script("arguments[0].value = 'New Value';", element)
+    select_departing_date(date="2023.06.05")
 
     # 4. ~ 시간 이후
-    select = Select(driver.find_element(by=By.ID, value="dptTm"))
-    time = "20"
-    select.select_by_value(f"{time}0000")  # 14시 이후
-    driver.implicitly_wait(10)
+    select_ticket_time_after("16")
     # 5. 조회하기 버튼 클릭
-    submit = driver.find_element(by=By.CLASS_NAME, value="btn_midium.wp100.btn_burgundy_dark.corner.val_m")
-    submit.click()
-    driver.implicitly_wait(100)
+    click_submit_for_search()
 
     # 6. 예약하기
 
-    idx = 0
+
+    # 테이블 제목 인덱스 0,1 은 제외시킨다
+    # 0: ex)동대구 → 수서   2023년 6월 5일(월)
+    # 1: 테이블 컬럼
+    # index 2 가 첫번째 티켓임.
+    _ticket_base_index = 1
+    _target_row = 4     # n번 째 티켓
+    target_ticket = _ticket_base_index + _target_row    # 몇번째 티켓인지
+    # _ticket_column_type: {0: 구분, 1: 열차종류, 2: 열차번호, 3: 출발시간, 4: 도착시간, 5: 소요시간, 6: 예약하기(매진)}
+    _ticket_column_type = 6
+    idx = 0  # 시도횟수
     while True:
-        # 테이블 제목 인덱스 0,1 은 제외시킨다
-        t = driver.find_elements(by=By.TAG_NAME, value='tr')[2]  # 첫번째 티켓
-        if t.find_elements(by=By.TAG_NAME, value='td')[6].text == "매진":
+        # 타겟한 티켓 찾기
+        ticket_element = driver.find_elements(by=By.TAG_NAME, value='tr')[target_ticket]  # n번째 티켓
+        ticket = ticket_element.find_elements(by=By.TAG_NAME, value='td')[_ticket_column_type]
+        ticket_name = ticket.text
+        if ticket_name == "매진" or ticket_name == "입석+좌석":
             idx += 1
-            print(f"매진{idx}")
+            print(f"{ticket_name}:{idx}")
+            # 밴을 당하지 않기 위해 n초 텀을 가집니다
             sleep(3)
             driver.refresh()
             continue
@@ -96,16 +102,51 @@ def find_condition():
                 driver.implicitly_wait(20)
                 driver.refresh()
                 continue
-            driver.execute_script(f'document.getElementsByClassName("btn_small btn_burgundy_dark val_m wx90")[{idx}].click()')
+            driver.implicitly_wait(100)
+            driver.execute_script(f'document.getElementsByTagName("tr")[{target_ticket}].getElementsByTagName("td")[{_ticket_column_type}].getElementsByTagName("a")[0].click()')
             # joonheealert로 gmail 보내기
-            gmail_sender.send_email()
+            gmail_sender.sendmail()
             return
         driver.refresh()
 
 
+class STATION(Enum):
+    수서 = "0015"
+    동대구 = "0551"
+
+def select_departing_date(date):
+    element = driver.find_element(by=By.CLASS_NAME, value="calendar1")
+    driver.execute_script(f"arguments[0].value = '{date}';", element)
+    element.submit()
+
+# 출발역
+def dparting_station(station):
+    _select_station(id="dptRsStnCd", station_number=station.value)  # 수서
+
+
+# 도착역
+def arrival_station(station):
+    _select_station(id="arvRsStnCd", station_number=station.value)  # 수서
+
+# 출발역, 도착역 공통
 def _select_station(id, station_number):
     select = Select(driver.find_element(by=By.ID, value=id))
     select.select_by_value(station_number)  # 수서
+
+
+# 00 시 이후 (srt 페이지에 나와 있는 시간대. 모바일 아님!), 2자리 수로 표현할것
+def select_ticket_time_after(time_after):
+    select = Select(driver.find_element(by=By.ID, value="dptTm"))
+    time = time_after
+    select.select_by_value(f"{time}0000")  # 14시 이후
+    driver.implicitly_wait(10)
+
+
+def click_submit_for_search():
+    submit = driver.find_element(by=By.CLASS_NAME, value="btn_midium.wp100.btn_burgundy_dark.corner.val_m")
+    driver.implicitly_wait(100)
+    submit.click()
+
 
 
 if __name__ == "__main__":

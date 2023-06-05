@@ -10,13 +10,19 @@ import os
 import requests
 import json
 
-import google_cred
-
+# from email_sender import google_cred
+from . import google_cred
 """
 출처 : https://kibua20.tistory.com/81
 """
 
 # -----------------------------------------------------------------------------------------
+
+to="joonheealert@gmail.com"
+subject = "srt 예약됨"
+message = "결제를 바람"
+
+
 def CreateMessage(sender, to, subject, message_text=None, attachment_path=None):
   """Create a message for an email.
 
@@ -76,9 +82,9 @@ def CreateMessage(sender, to, subject, message_text=None, attachment_path=None):
     return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode('utf8')}
 
 # -----------------------------------------------------------------------------------------
-def sendmail(to, subject, message_text_html, attachment=None):
+def sendmail(to=to, subject=subject, message_text_html=message, attachment=None):
   # Your access code
-  cred = google_cred.get_creds(main_method_for_retry=sendmail())
+  cred = google_cred.get_creds()
   access_token = cred.token
   user_id = 'dreamrunner416@gmail.com'
 
@@ -98,15 +104,12 @@ def sendmail(to, subject, message_text_html, attachment=None):
 
   response = requests.post(URL, headers=request_header, data=json.dumps(payload))
 
-  print ('*** Error *** : sendmail fail')
+  print ('*** SUCCESS *** : sendmail success')
   print(response)
   print(response.text)
 
 # -----------------------------------------------------------------------------------------
 
-to="joonheealert@gmail.com"
-subject = "srt 예약됨"
-message = "결제를 바람"
 
 if __name__ == "__main__":
     sendmail(to, subject, message, None)

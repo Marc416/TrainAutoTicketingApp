@@ -6,9 +6,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 # 토큰이 사용되기 위한 범위 설정 (https://developers.google.com/identity/protocols/oauth2/scopes?hl=ko#drive)
 SCOPES = ['https://mail.google.com/']  # (파일을 생성, 수정, 삭제)
-token_path = 'secret/uploader_app_token.json'  # google driver 앱클라이언트를 사용할 유저의 토큰
-credentials_path = 'secret/credentials.json'  # google driver 의 앱클라이언트 토큰
-
+token_path = '/Users/joonheelee/Desktop/Github_Marc416/beautiful_soup/email_sender/secret/uploader_app_token.json'  # google driver 앱클라이언트를 사용할 유저의 토큰
+# token_path = '/secret/uploader_app_token.json'  # google driver 앱클라이언트를 사용할 유저의 토큰
+credentials_path = '/Users/joonheelee/Desktop/Github_Marc416/beautiful_soup/email_sender/secret/credentials.json'  # google driver 의 앱클라이언트 토큰
+# credentials_path = '/secret/credentials.json'  # google driver 의 앱클라이언트 토큰
 
 def get_creds(
         token_path: str = token_path,
