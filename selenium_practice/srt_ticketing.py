@@ -51,10 +51,10 @@ def catch_ticket():
     # 2. 도착역 입력
     arrival_station(station=STATION.동대구)
     # 3. 출발일 입력
-    select_departing_date(date="2023.06.05")
+    select_departing_date(date="2023.06.23")
 
     # 4. ~ 시간 이후
-    select_ticket_time_after("16")
+    select_ticket_time_after("20")
     # 5. 조회하기 버튼 클릭
     click_submit_for_search()
 
@@ -66,7 +66,7 @@ def catch_ticket():
     # 1: 테이블 컬럼
     # index 2 가 첫번째 티켓임.
     _ticket_base_index = 1
-    _target_row = 4     # n번 째 티켓
+    _target_row = 1     # n번 째 티켓
     target_ticket = _ticket_base_index + _target_row    # 몇번째 티켓인지
     # _ticket_column_type: {0: 구분, 1: 열차종류, 2: 열차번호, 3: 출발시간, 4: 도착시간, 5: 소요시간, 6: 예약하기(매진)}
     _ticket_column_type = 6
@@ -111,8 +111,8 @@ def catch_ticket():
 
 
 class STATION(Enum):
-    수서 = "0015"
-    동대구 = "0551"
+    동대구 = "0015"
+    수서 = "0551"
 
 def select_departing_date(date):
     element = driver.find_element(by=By.CLASS_NAME, value="calendar1")
