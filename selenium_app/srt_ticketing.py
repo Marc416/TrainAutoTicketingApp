@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 
 from email_sender import gmail_sender
-from selenium_practice import my_auth
+from selenium_app import my_auth
 
 options = Options()
 options.add_experimental_option("detach", True)
@@ -51,10 +51,10 @@ def catch_ticket():
     # 2. 도착역 입력
     arrival_station(station=STATION.동대구)
     # 3. 출발일 입력
-    select_departing_date(date="2023.06.23")
+    select_departing_date(date="2023.07.17")
 
     # 4. ~ 시간 이후
-    select_ticket_time_after("20")
+    select_ticket_time_after("00")
     # 5. 조회하기 버튼 클릭
     click_submit_for_search()
 
@@ -66,7 +66,7 @@ def catch_ticket():
     # 1: 테이블 컬럼
     # index 2 가 첫번째 티켓임.
     _ticket_base_index = 1
-    _target_row = 1     # n번 째 티켓
+    _target_row = 3     # n번 째 티켓
     target_ticket = _ticket_base_index + _target_row    # 몇번째 티켓인지
     # _ticket_column_type: {0: 구분, 1: 열차종류, 2: 열차번호, 3: 출발시간, 4: 도착시간, 5: 소요시간, 6: 예약하기(매진)}
     _ticket_column_type = 6
