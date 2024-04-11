@@ -1,28 +1,33 @@
 from enum import Enum
 from time import sleep
+import os
 
 from selenium import webdriver
-from selenium.common import StaleElementReferenceException
+from selenium.common import StaleElementReferenceException, ElementClickInterceptedException, TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.wait import WebDriverWait
 
-from email_sender import gmail_sender
+# from email_sender import gmail_sender
 from naver_sms_sender import send_sms
 from main_app import my_auth
 
 options = Options()
 options.add_experimental_option("detach", True)
+options.add_argument("headless")
 options.page_load_strategy = 'normal'
-driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)  # 크롬드라이버 경로
+driver = webdriver.Chrome()
+# driver = webdriver.Chrome(ChromeDriverManager().install())
+# driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)  # 크롬드라이버 경로
 
 
 def main():
-    # u = "https://www.naver.com"
+    u = "https://www.naver.com"
     korail_site = "https://etk.srail.kr/cmc/01/selectLoginForm.do?pageId=TK0701000000"
     driver.get(korail_site)
-    driver.implicitly_wait(10)  # 0.5초 기다림 (웹브라우저 로딩 sync 맞추기위해서)
+    driver.implicitly_wait(3)  # 0.5초 기다림 (웹브라우저 로딩 sync 맞추기위해서)
 
     input_id_pwd()
     click_login_button()
@@ -36,24 +41,22 @@ def input_id_pwd():
     id_field.send_keys(my_auth.my_id)
     pwd_field = driver.find_element(by=By.ID, value=input_pwd)
     pwd_field.send_keys(my_auth.my_pwd)
-    driver.implicitly_wait(10)
 
 
 def click_login_button():
     # 클래스가 띄어쓰기로 돼 있으면 '.'으로 교체합니다
     submit_button = driver.find_element(by=By.CLASS_NAME, value="submit.btn_pastel2.loginSubmit")
     submit_button.click()
-    driver.implicitly_wait(30)
 
 
 def catch_ticket():
     # select 필드의 옵션 value를 선택합니다
     # 1. 출발역 입력
-    dparting_station(station=STATION.수서)
+    dparting_station(station=STATION.동대구)
     # 2. 도착역 입력
-    arrival_station(station=STATION.동대구)
+    arrival_station(station=STATION.수서)
     # 3. 출발일 입력
-    select_departing_date(date="2023.01.21")
+    select_departing_date(date="2024.03.31")
 
     # 4. ~ 시간 이후
     select_ticket_time_after("14")
@@ -68,14 +71,30 @@ def catch_ticket():
     # 1: 테이블 컬럼
     # index 2 가 첫번째 티켓임.
     _ticket_base_index = 1
-    _target_row = 2     # n번 째 티켓
+    _target_row = 5     # n번 째 티켓
     target_ticket = _ticket_base_index + _target_row    # 몇번o째 티켓인지
     # _ticket_column_type: {0: 구분, 1: 열차종류, 2: 열차번호, 3: 출발시간, 4: 도착시간, 5: 소요시간, 6: 예약하기(매진)}
     _ticket_column_type = 6
     idx = 0  # 시도횟수
+    click_show_train_list_btn()
     while True:
         # 타겟한 티켓 찾기
-        ticket_element = driver.find_elements(by=By.TAG_NAME, value='tr')[target_ticket]  # n번째 티켓
+        # ticket_element = driver.find_elements(by=By.TAG_NAME, value='tr')[target_ticket]  # n번째 티켓
+        try:
+            # Set the timeout
+            timeout = 3  # seconds
+
+            # Wait until the presence of the element located
+            WebDriverWait(driver, timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'tr')))
+
+            # Now find the elements
+            ticket_element = driver.find_elements(by=By.TAG_NAME, value='tr')[target_ticket]  # n번째 티켓
+
+        except TimeoutException:
+            print("Timed out waiting for the element to load")
+            click_show_train_list_btn()
+            driver.refresh()
+            continue
         ticket = ticket_element.find_elements(by=By.TAG_NAME, value='td')[_ticket_column_type]
         ticket_name = ticket.text
         if ticket_name == "매진" or ticket_name == "입석+좌석":
@@ -89,7 +108,6 @@ def catch_ticket():
         book_buttons = driver.find_elements(by=By.CLASS_NAME, value="btn_small.btn_burgundy_dark.val_m.wx90")
         for idx, book_button in enumerate(book_buttons):
             if idx != 0:
-                driver.implicitly_wait(20)
                 print(f"{idx}번째 예약하기 버튼이 아님")
                 driver.refresh()
                 continue
@@ -97,18 +115,18 @@ def catch_ticket():
             try:
                 if book_button.text != "예약하기":
                     print(f"{idx}번째 예약하기 버튼이 아님")
-                    driver.implicitly_wait(20)
                     driver.refresh()
                     continue
             except StaleElementReferenceException as e:
-                driver.implicitly_wait(20)
                 driver.refresh()
                 continue
-            driver.implicitly_wait(100)
             driver.execute_script(f'document.getElementsByTagName("tr")[{target_ticket}].getElementsByTagName("td")[{_ticket_column_type}].getElementsByTagName("a")[0].click()')
             send_sms.SendMessage().send()
+            sleep(30)
+            # driver.quit()
+            # os.system('say "티켓이 예매됐어 빨리 카드결제해"')
             # joonheealert로 gmail 보내기
-            gmail_sender.sendmail()
+            # gmail_sender.sendmail()
             return
         driver.refresh()
 
@@ -143,14 +161,19 @@ def select_ticket_time_after(time_after):
     select = Select(driver.find_element(by=By.ID, value="dptTm"))
     time = time_after
     select.select_by_value(f"{time}0000")  # 14시 이후
-    driver.implicitly_wait(10)
 
 
 def click_submit_for_search():
     submit = driver.find_element(by=By.CLASS_NAME, value="btn_midium.wp100.btn_burgundy_dark.corner.val_m")
-    driver.implicitly_wait(100)
     submit.click()
 
+def click_show_train_list_btn():
+    # driver.execute_script("window.scrollTo(0, 70);")
+    show_train_list_btn = driver.find_element(by=By.CLASS_NAME, value="tal_c.mgt30")
+    try:
+        show_train_list_btn.click()
+    except [ElementClickInterceptedException, StaleElementReferenceException, TypeError] as e:
+        driver.refresh()
 
 
 if __name__ == "__main__":
