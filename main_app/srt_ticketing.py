@@ -177,7 +177,7 @@ def click_show_train_list_btn():
         show_train_list_btn.click()
         try:
             # 페이지가 완전 로딩되는 시간을 기다립니다
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 20).until(
                 lambda driver: driver.execute_script('return document.readyState') == 'complete'
             )
             print("Page refreshed and fully loaded.")
