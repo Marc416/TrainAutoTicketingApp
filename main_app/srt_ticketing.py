@@ -3,7 +3,7 @@ from time import sleep
 import os
 
 from selenium import webdriver
-from selenium.common import StaleElementReferenceException, ElementClickInterceptedException, TimeoutException
+from selenium.common import StaleElementReferenceException, ElementClickInterceptedException, TimeoutException, NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -52,14 +52,14 @@ def click_login_button():
 def catch_ticket():
     # select 필드의 옵션 value를 선택합니다
     # 1. 출발역 입력
-    dparting_station(station=STATION.동대구)
+    dparting_station(station=STATION.수서)
     # 2. 도착역 입력
-    arrival_station(station=STATION.수서)
+    arrival_station(station=STATION.동대구)
     # 3. 출발일 입력
-    select_departing_date(date="2024.05.19")
+    select_departing_date(date="2024.06.05")
 
     # 4. ~ 시간 이후
-    select_ticket_time_after("12")
+    select_ticket_time_after("18")
     # 5. 조회하기 버튼 클릭
     click_submit_for_search()
 
@@ -71,7 +71,7 @@ def catch_ticket():
     # 1: 테이블 컬럼
     # index 2 가 첫번째 티켓임.
     _ticket_base_index = 1
-    _target_row = 6     # n번 째 티켓
+    _target_row = 5     # n번 째 티켓
     target_ticket = _ticket_base_index + _target_row    # 몇번o째 티켓인지
     # _ticket_column_type: {0: 구분, 1: 열차종류, 2: 열차번호, 3: 출발시간, 4: 도착시간, 5: 소요시간, 6: 예약하기(매진)}
     _ticket_column_type = 6
@@ -82,7 +82,7 @@ def catch_ticket():
         # ticket_element = driver.find_elements(by=By.TAG_NAME, value='tr')[target_ticket]  # n번째 티켓
         try:
             # Set the timeout
-            timeout = 3  # seconds
+            timeout = 20  # seconds
 
             # Wait until the presence of the element located
             WebDriverWait(driver, timeout).until(EC.presence_of_element_located((By.TAG_NAME, 'tr')))
@@ -93,6 +93,9 @@ def catch_ticket():
         except TimeoutException:
             print("Timed out waiting for the element to load")
             click_show_train_list_btn()
+            driver.refresh()
+            continue
+        except IndexError:
             driver.refresh()
             continue
         ticket = ticket_element.find_elements(by=By.TAG_NAME, value='td')[_ticket_column_type]
@@ -172,7 +175,17 @@ def click_show_train_list_btn():
     show_train_list_btn = driver.find_element(by=By.CLASS_NAME, value="tal_c.mgt30")
     try:
         show_train_list_btn.click()
+        try:
+            # 페이지가 완전 로딩되는 시간을 기다립니다
+            WebDriverWait(driver, 10).until(
+                lambda driver: driver.execute_script('return document.readyState') == 'complete'
+            )
+            print("Page refreshed and fully loaded.")
+        except TimeoutException:
+            print("Timed out waiting for page to load.")
     except [ElementClickInterceptedException, StaleElementReferenceException, TypeError] as e:
+        driver.refresh()
+    except NoSuchElementException as e:
         driver.refresh()
 
 
