@@ -27,6 +27,8 @@ class STATION(Enum):
     수서 = "0551"
     부산 = "0020"
     평택 = "0553"
+    오송 = "0297"
+
 
 # 시간대(온라인홈페이지에 나온는 시간대만 사용가능)
 class TIME(Enum):
@@ -42,6 +44,12 @@ class TIME(Enum):
     _18 = "18"
     _20 = "20"
     _22 = "22"
+
+
+class TRAIN_TYPE_ID(Enum):
+    전체 = "trnGpCd109"
+    SRT = "trnGpCd300"
+    KTX_SRT = "trnGpCd900"
 
 
 def main():
@@ -74,25 +82,27 @@ def click_login_button():
 def catch_ticket():
     # select 필드의 옵션 value를 선택합니다
     # 1. 출발역 입력
-    dparting_station(station=STATION.평택)
+    dparting_station(station=STATION.동대구)
     # 2. 도착역 입력
-    arrival_station(station=STATION.동대구)
+    arrival_station(station=STATION.수서)
     # 3. 출발일 입력
-    select_departing_date(date="2024.10.23")
+    select_departing_date(date="2024.12.29")
 
     # 4. ~ 시간 이후
     select_ticket_time_after(time_after=TIME._16)
     # 5. 조회하기 버튼 클릭
     click_submit_for_search(timeout=DEFAULT_TIME_OUT_SECOND)
 
-    # 6. 예약하기
+    # 6. 열차타입 선택
+    select_train_type(train_type=TRAIN_TYPE_ID.SRT)
 
+    # 7. 예약하기
     # 테이블 제목 인덱스 0,1 은 제외시킨다
     # 0: ex)동대구 → 수서   2023년 6월 5일(월)
     # 1: 테이블 컬럼
     # index 2 가 첫번째 티켓임.
     _ticket_base_index = 1
-    _target_row = 1  # n번 째 티켓
+    _target_row = 5  # n번 째 티켓
     target_ticket = _ticket_base_index + _target_row  # 몇번o째 티켓인지
     # _ticket_column_type: {0: 구분, 1: 열차종류, 2: 열차번호, 3: 출발시간, 4: 도착시간, 5: 소요시간, 6: 예약하기(매진)}
     _ticket_column_type = 6  # 5: 특실, 6: 일반실
@@ -156,6 +166,15 @@ def select_departing_date(date):
         EC.element_to_be_clickable((By.CLASS_NAME, "calendar1"))
     )
     driver.execute_script(f"arguments[0].value = '{date}';", element)
+
+
+# 열차타입 선택 : 전체, SRT, KTX+SRT
+def select_train_type(train_type: TRAIN_TYPE_ID):
+    WebDriverWait(driver, DEFAULT_TIME_OUT_SECOND).until(EC.presence_of_all_elements_located((By.NAME, "trnGpCd")))
+    driver.execute_script("window.scrollTo(0, 0);")
+    radio_button = driver.find_element(By.ID, train_type.value)  # ID로 라디오 버튼 찾기
+    radio_button.click()
+    click_show_train_list_btn()
 
 
 # 출발역
