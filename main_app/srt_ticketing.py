@@ -1,3 +1,5 @@
+import datetime
+import time
 from enum import Enum
 from time import sleep
 import os
@@ -18,7 +20,7 @@ options = Options()
 options.add_experimental_option("detach", True)
 options.add_argument("headless")
 options.page_load_strategy = 'normal'
-driver = webdriver.Chrome()
+driver = webdriver.Chrome(options=options)
 DEFAULT_TIME_OUT_SECOND = 120  # 브라우저대기시간 ; 대기자가 많은경우 60초이상으로 설정하여 기다리기
 
 
@@ -86,10 +88,10 @@ def catch_ticket():
     # 2. 도착역 입력
     arrival_station(station=STATION.수서)
     # 3. 출발일 입력
-    select_departing_date(date="2024.12.29")
+    select_departing_date(date="2025.04.06")
 
     # 4. ~ 시간 이후
-    select_ticket_time_after(time_after=TIME._16)
+    select_ticket_time_after(time_after=TIME._12)
     # 5. 조회하기 버튼 클릭
     click_submit_for_search(timeout=DEFAULT_TIME_OUT_SECOND)
 
@@ -102,7 +104,7 @@ def catch_ticket():
     # 1: 테이블 컬럼
     # index 2 가 첫번째 티켓임.
     _ticket_base_index = 1
-    _target_row = 5  # n번 째 티켓
+    _target_row = 3  # n번 째 티켓
     target_ticket = _ticket_base_index + _target_row  # 몇번o째 티켓인지
     # _ticket_column_type: {0: 구분, 1: 열차종류, 2: 열차번호, 3: 출발시간, 4: 도착시간, 5: 소요시간, 6: 예약하기(매진)}
     _ticket_column_type = 6  # 5: 특실, 6: 일반실
@@ -130,9 +132,9 @@ def catch_ticket():
         ticket_name = ticket.text
         if ticket_name == "매진" or ticket_name == "입석+좌석":
             count += 1
-            print(f"{ticket_name}:{count}")
+            print(f"{datetime.datetime.now()} {ticket_name}:{count}")
             # 밴을 당하지 않기 위해 n초 텀을 가집니다
-            sleep(1)
+            sleep(1 )
             driver.refresh()
             continue
 
@@ -153,6 +155,7 @@ def catch_ticket():
                 continue
             driver.execute_script(f'document.getElementsByTagName("tr")[{target_ticket}].getElementsByTagName("td")[{_ticket_column_type}].getElementsByTagName("a")[0].click()')
             # driver.quit()
+            print("예약하기 버튼 클릭됨")
             os.system('say "티켓이 예매됐어 빨리 카드결제해"')
             send_kakao_message_to_me()
             return
@@ -204,7 +207,7 @@ def click_submit_for_search(timeout=DEFAULT_TIME_OUT_SECOND):
     try:
 
         submit = WebDriverWait(driver, timeout).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, ".btn_midium.wp100.btn_burgundy_dark.corner.val_m")), None
+            EC.element_to_be_clickable((By.CSS_SELECTOR, ".btn_midium.wp100.btn_burgundy_dark2.corner.val_m")), None
         )
         submit.click()
 
